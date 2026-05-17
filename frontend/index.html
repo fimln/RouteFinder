@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Route Finder - A* UGM</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <div id="panel">
+    <h3>A* Route Finder</h3>
+    <div id="status">Klik titik awal</div>
+
+    <div id="score-box" class="hidden">
+      <div class="score-title">Current Node Scores</div>
+      <div class="score-row">
+        <span class="score-label f-label">f =</span>
+        <span id="score-f">--</span>
+        <span class="score-eq">g + h</span>
+      </div>
+      <div class="score-row">
+        <span class="score-label g-label">g =</span>
+        <span id="score-g">--</span>
+        <span class="score-desc">(cost so far)</span>
+      </div>
+      <div class="score-row">
+        <span class="score-label h-label">h =</span>
+        <span id="score-h">--</span>
+        <span class="score-desc">(heuristic to goal)</span>
+      </div>
+    </div>
+
+    <div id="distance"></div>
+    <div id="nodes-explored"></div>
+
+    <div id="speed-control">
+      <label for="speed-slider">Animation Speed</label>
+      <input type="range" id="speed-slider" min="1" max="10" value="4" step="1" />
+      <div class="speed-labels">
+        <span>Slow</span>
+        <span>Fast</span>
+      </div>
+    </div>
+
+    <button id="reset">Reset</button>
+  </div>
+
+  <div id="legend">
+    <div class="legend-title">Legend</div>
+    <div class="legend-item">
+      <span class="legend-marker" style="background:#4caf50;"></span>
+      Start Point
+    </div>
+    <div class="legend-item">
+      <span class="legend-marker" style="background:#e53935;"></span>
+      Goal Point
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot" style="background:#f57c00;"></span>
+      Explored Nodes (closed set)
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot" style="background:#ffeb3b;"></span>
+      Current Node
+    </div>
+    <div class="legend-item">
+      <span class="legend-line"></span>
+      Optimal Path
+    </div>
+    <div class="legend-formula">
+      f(n) = g(n) + h(n)<br />
+      <small>g = distance from start<br />h = straight-line to goal</small>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="map.js"></script>
+</body>
+</html>

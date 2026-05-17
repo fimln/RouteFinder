@@ -1,0 +1,8 @@
+.claude/
+backend/graph_cache.pkl
+backend/cache/
+backend/__pycache__/
+__pycache__/
+*.pyc
+.env
+venv/
