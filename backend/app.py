@@ -11,6 +11,7 @@ from config import AREA_CENTER, AREA_RADIUS_M
 from graph_loader import GRAPH, nearest_node
 # pyrefly: ignore [missing-import]
 from astar import astar
+from ga import genetic_algorithm
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -45,6 +46,7 @@ def route():
     body = request.get_json(silent=True) or {}
     start = body.get("start")
     end = body.get("end")
+    algorithm = body.get("ga", "astar")
 
     if not (isinstance(start, list) and len(start) == 2 and isinstance(end, list) and len(end) == 2):
         return jsonify({"error": "Coordinates outside supported area."}), 400
@@ -61,7 +63,10 @@ def route():
     logger.info("Route request: start_node=%s end_node=%s", start_node, end_node)
 
     try:
-        result = astar(GRAPH, start_node, end_node)
+        if algorithm == "ga":
+            result = genetic_algorithm(GRAPH, start_node, end_node, pop_size=10, generations=20)
+        else:
+            result = astar(GRAPH, start_node, end_node)
     except ValueError:
         return jsonify({"error": "No path found between the selected points."}), 404
 

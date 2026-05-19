@@ -22,6 +22,7 @@ const scoreF         = document.getElementById("score-f");
 const scoreG         = document.getElementById("score-g");
 const scoreH         = document.getElementById("score-h");
 const speedSlider    = document.getElementById("speed-slider");
+const algoSelect     = document.getElementById("algo-select");
 
 function getSpeedMultiplier() {
   const val = parseInt(speedSlider.value);
@@ -63,19 +64,29 @@ async function onMapClick(e) {
       .bindTooltip("Goal", { permanent: true, direction: "top", offset: [0, -8] })
       .openTooltip();
     state = "done";
-    statusEl.textContent = "Mencari rute...";
+
+    const algorithm = algoSelect.value;
+    statusEl.textContent = `Mencari rute dengan ${algorithm.toUpperCase()}...`;
+
     distanceEl.textContent = "";
     nodesEl.textContent = "";
-    scoreBox.classList.remove("hidden");
-    scoreF.textContent = "--";
-    scoreG.textContent = "--";
-    scoreH.textContent = "--";
+
+    // pilihan scorebox 
+    if (algorithm === "ga") {
+      scoreBox.classList.add("hidden");
+    } else {
+      scoreBox.classList.remove("hidden");
+      scoreF.textContent = "--";
+      scoreG.textContent = "--";
+      scoreH.textContent = "--";
+    }
 
     try {
       const res = await fetch(`${API_BASE}/api/route`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ start: startCoords, end: endCoords }),
+        // Kirim pilihan algoritma ke server
+        body: JSON.stringify({ start: startCoords, end: endCoords, algorithm: algorithm }),
       });
 
       const data = await res.json();
@@ -98,6 +109,13 @@ async function onMapClick(e) {
 function placeExploredNode(node) {
   const { lat, lon, f, g, h } = node;
 
+  let tooltipHTML = "";
+  if (f === "GA") {
+    tooltipHTML = `<b>Genetic Algorithm</b><br>Menyebar & mengevaluasi<br>probabilitas kromosom rute.`;
+  } else {
+    tooltipHTML = `<b>f</b> = ${f} m<br><span style="color:#8bc34a;"><b>g</b> = ${g} m</span><br><span style="color:#ff9800;"><b>h</b> = ${h} m</span>`;
+  }
+
   L.circleMarker([lat, lon], {
     radius: 7,
     color: "#bf5700",
@@ -107,9 +125,7 @@ function placeExploredNode(node) {
     interactive: true,
     bubblingMouseEvents: false,
   }).addTo(explorationLayer)
-    .bindTooltip(
-      `<b>f</b> = ${f} m<br><span style="color:#8bc34a;"><b>g</b> = ${g} m</span><br><span style="color:#ff9800;"><b>h</b> = ${h} m</span>`,
-      {
+    .bindTooltip(tooltipHTML, {
         className: "explored-tooltip",
         direction: "top",
         offset: [0, -8],
@@ -128,9 +144,11 @@ function placeExploredNode(node) {
     bubblingMouseEvents: false,
   }).addTo(map);
 
-  scoreF.textContent = `${f} m`;
-  scoreG.textContent = `${g} m`;
-  scoreH.textContent = `${h} m`;
+  if (f != "GA") {
+    scoreF.textContent = `${f} m`;
+    scoreG.textContent = `${g} m`;
+    scoreH.textContent = `${h} m`;
+  }
 }
 
 function animateExploration(explored, path, distanceM, nodesExplored) {
@@ -195,12 +213,16 @@ function drawResult(path, distanceM, nodesExplored) {
     layer._path.style.pointerEvents = "auto";
   });
 
+  const algorithm = algoSelect.value;
+  const routeColor = algorithm === "ga" ? "#9c27b0" : "#1a73e8";
+
   routeLine = L.polyline(path, {
     color: "#1a73e8",
     weight: 5,
     interactive: false,
     bubblingMouseEvents: false,
   }).addTo(map);
+
   map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
 
   const dm = distanceM;
@@ -232,10 +254,28 @@ resetBtn.addEventListener("click", () => {
   statusEl.textContent = "Klik titik awal";
   distanceEl.textContent = "";
   nodesEl.textContent = "";
-  scoreBox.classList.add("hidden");
+
+  const algorithm = algoSelect.value;
+  if (algorithm === "ga") {
+    scoreBox.classList.add("hidden");
+  } else {
+    scoreBox.classList.remove("hidden");
+  }
+
   scoreF.textContent = "--";
   scoreG.textContent = "--";
   scoreH.textContent = "--";
+});
+
+// Update score box otomatis ketika ganti dropdown (tanpa perlu klik reset)
+algoSelect.addEventListener("change", (e) => {
+    if(state === "awaiting_start" || state === "awaiting_end"){
+        if (e.target.value === "ga") {
+            scoreBox.classList.add("hidden");
+        } else {
+            scoreBox.classList.remove("hidden");
+        }
+    }
 });
 
 function greenIcon() {

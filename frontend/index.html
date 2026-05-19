@@ -11,7 +11,17 @@
   <div id="map"></div>
 
   <div id="panel">
-    <h3>A* Route Finder</h3>
+    <h3>Route Finder</h3>
+
+    <!-- Pilihan Algoritma -->
+    <div class="algo-selection">
+      <label for="algo-select">Pilih Algoritma:</label>
+      <select id="algo-select">
+        <option value="astar">A* (A-Star Algorithm)</option>
+        <option value="ga">Genetic Algorithm (GA)</option>
+      </select>
+    </div>
+
     <div id="status">Klik titik awal</div>
 
     <div id="score-box" class="hidden">
