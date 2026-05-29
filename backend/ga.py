@@ -1,5 +1,6 @@
 import random
 import logging
+import networkx as nx
 from astar import _haversine
 
 logger = logging.getLogger(__name__)
@@ -70,8 +71,13 @@ def crossover(path1, path2):
     idx2 = path2.index(crossover_point)
 
     # Gabungkan bagian awal parent 1 dan bagian akhir parent 2
-    new_path = path1[:idx1] + path2[idx2:]
-    return new_path
+    prefix = path1[:idx1]
+    suffix = path2[idx2:]
+    prefix_set = set(prefix)
+    # Jika suffix mengandung node yang sudah ada di prefix (siklus), fallback
+    if prefix_set.intersection(set(suffix[1:])):
+        return path1
+    return prefix + suffix
 
 def mutate(graph, path, end_node, explored_order):
     """Melakukan mutasi dengan memutus rute di tengah, lalu mencari rute baru ke tujuan."""
@@ -93,16 +99,20 @@ def genetic_algorithm(graph, start_node, end_node, pop_size=10, generations=20):
     population = []
 
     # 1. Inisialisasi Populasi
-    # Mencoba membuat populasi awal. Karena jalan bisa buntu, kita coba lebih banyak.
-    for _ in range(pop_size * 3):
-        p = generate_random_path(graph, start_node, end_node, explored_order)
-        if p:
-            population.append(p)
-        if len(population) == pop_size:
-            break
-
-    if not population:
+    # Gunakan shortest path sebagai jaminan satu rute valid
+    try:
+        shortest = nx.shortest_path(graph, start_node, end_node, weight="length")
+        population.append(shortest)
+    except nx.NetworkXNoPath:
         raise ValueError("GA gagal menemukan rute awal yang valid. Coba titik lain.")
+
+    # Tambahkan rute acak berbias untuk mengisi populasi
+    for _ in range(pop_size * 3):
+        if len(population) >= pop_size:
+            break
+        p = generate_random_path(graph, start_node, end_node, explored_order)
+        if p and p not in population:
+            population.append(p)
 
     best_path = None
     best_dist = float('inf')
@@ -118,7 +128,8 @@ def genetic_algorithm(graph, start_node, end_node, pop_size=10, generations=20):
             best_path = pop_fitness[0][0]
             best_dist = pop_fitness[0][1]
 
-        next_gen = [pop_fitness[0][0], pop_fitness[1][0]] # Bawa 2 rute terbaik ke generasi selanjutnya
+        elite_count = min(2, len(pop_fitness))
+        next_gen = [pop_fitness[i][0] for i in range(elite_count)] # Bawa rute terbaik ke generasi selanjutnya
 
         # Crossover & Mutasi
         while len(next_gen) < pop_size:

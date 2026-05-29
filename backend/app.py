@@ -46,7 +46,7 @@ def route():
     body = request.get_json(silent=True) or {}
     start = body.get("start")
     end = body.get("end")
-    algorithm = body.get("ga", "astar")
+    algorithm = body.get("algorithm", "astar")
 
     if not (isinstance(start, list) and len(start) == 2 and isinstance(end, list) and len(end) == 2):
         return jsonify({"error": "Coordinates outside supported area."}), 400
