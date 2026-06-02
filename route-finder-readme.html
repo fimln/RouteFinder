@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RouteFinder, A* and Genetic Algorithm on UGM walking network</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --surface-2: #f3f1ec;
+      --border: #e5e3de;
+      --text: #1f1f1f;
+      --muted: #6b6b6b;
+      --accent: #c8501a;
+      --accent-soft: #f3d8c5;
+      --green: #2e7d32;
+      --blue: #1a73e8;
+      --purple: #7b1fa2;
+      --yellow: #f9a825;
+      --add: #d6f0d4;
+      --del: #f6d2cf;
+      --code-bg: #f3f1ec;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1e1e1e;
+        --surface: #262626;
+        --surface-2: #2d2a26;
+        --border: #3a3a3a;
+        --text: #e8e6e1;
+        --muted: #9a948a;
+        --accent: #e6783f;
+        --accent-soft: #3a261b;
+        --green: #81c784;
+        --blue: #64b5f6;
+        --purple: #ce93d8;
+        --yellow: #ffd54f;
+        --add: #1f3a23;
+        --del: #4a2222;
+        --code-bg: #2a2a2a;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 2rem 1.5rem 4rem;
+    }
+    main { max-width: 80ch; margin: 0 auto; }
+    h1 { font-size: 1.9rem; margin: 0 0 0.4rem; line-height: 1.25; letter-spacing: -0.01em; }
+    h2 { font-size: 1.35rem; margin: 2.5rem 0 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; letter-spacing: -0.005em; }
+    h3 { font-size: 1.05rem; margin: 1.6rem 0 0.45rem; }
+    h4 { margin: 0 0 0.4rem; font-size: 0.95rem; }
+    p { margin: 0.7rem 0; }
+    .lede { color: var(--muted); margin: 0 0 1.25rem; font-size: 1.05rem; }
+    a { color: var(--accent); }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.6rem 0 0; }
+    .chip {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .chip.accent { color: var(--accent); border-color: var(--accent-soft); background: var(--accent-soft); }
+    .tldr {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      padding: 0.9rem 1.1rem;
+      border-radius: 4px;
+      margin: 1.25rem 0 1.75rem;
+    }
+    .tldr strong { color: var(--accent); }
+    nav.toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      margin: 1rem 0 2rem;
+      font-size: 0.95rem;
+    }
+    nav.toc strong { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    nav.toc ol { margin: 0.4rem 0 0; padding-left: 1.3rem; }
+    nav.toc li { margin: 0.15rem 0; }
+    nav.toc a { color: var(--text); text-decoration: none; }
+    nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+    section { margin-bottom: 1rem; }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.85rem 1rem;
+      overflow-x: auto;
+      font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+    code { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: 0.92em; }
+    :not(pre) > code { background: var(--code-bg); border: 1px solid var(--border); padding: 0.05em 0.35em; border-radius: 3px; }
+    .table-wrap { overflow-x: auto; margin: 0.6rem 0 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+    th, td { border: 1px solid var(--border); padding: 0.45rem 0.7rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface); font-weight: 600; }
+    details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.55rem 0.95rem;
+      margin: 0.8rem 0;
+    }
+    details[open] { background: var(--surface-2); }
+    summary { cursor: pointer; font-weight: 500; outline: none; }
+    summary:hover { color: var(--accent); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.6rem 0 1rem; }
+    @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 0.9rem 1.05rem;
+    }
+    .badge { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; margin-left: 0.3rem; vertical-align: middle; }
+    .badge.astar { background: rgba(26,115,232,0.15); color: var(--blue); }
+    .badge.ga { background: rgba(123,31,162,0.15); color: var(--purple); }
+    .legend-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0; font-size: 0.92rem; }
+    .swatch { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
+    .swatch.line { width: 24px; height: 4px; border-radius: 2px; }
+    .formula {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.85rem;
+      border-radius: 4px;
+      display: inline-block;
+      margin: 0.4rem 0;
+    }
+    .diff-line { display: block; padding: 0 0.4rem; }
+    .diff-add { background: var(--add); }
+    .diff-del { background: var(--del); }
+    .diff-add::before { content: "+ "; color: var(--green); }
+    .diff-del::before { content: "- "; color: #c62828; }
+    @media (prefers-color-scheme: dark) {
+      .diff-del::before { color: #ef9a9a; }
+    }
+    .arch {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1rem;
+      margin: 0.8rem 0 1rem;
+    }
+    .arch-flow {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .arch-node {
+      flex: 1 1 180px;
+      min-width: 0;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 0.85rem;
+    }
+    .arch-node h5 { margin: 0 0 0.15rem; font-size: 0.95rem; }
+    .arch-node .sub { color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; display: block; margin-bottom: 0.55rem; }
+    .arch-pill {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      color: var(--text);
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.3rem 0;
+      text-align: center;
+    }
+    .arch-edges {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin: 0.6rem 0 0;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .arch-edges span { padding: 0.15rem 0.55rem; border: 1px dashed var(--border); border-radius: 999px; }
+    .arch-edges .accent-edge { color: var(--accent); border-color: var(--accent); }
+    img, svg { max-width: 100%; height: auto; display: block; }
+    .speed-table td:first-child { width: 5ch; text-align: center; font-variant-numeric: tabular-nums; }
+    .speed-table td { font-variant-numeric: tabular-nums; }
+    .sig {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2.5rem;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>RouteFinder</h1>
+    <p class="lede">Shortest-path search on the OpenStreetMap walking network around Universitas Gadjah Mada, Yogyakarta. Pick a start and a goal on the map, watch the algorithm explore.</p>
+    <div class="chips">
+      <span class="chip accent">branch: branch_ali</span>
+      <span class="chip">Python 3.9+</span>
+      <span class="chip">Flask</span>
+      <span class="chip">OSMnx</span>
+      <span class="chip">Leaflet.js</span>
+      <span class="chip">A*</span>
+      <span class="chip">Genetic Algorithm</span>
+    </div>
+
+    <div class="tldr">
+      <strong>TL;DR.</strong> Flask backend loads a cached OSM walking graph (10 km around UGM), runs either A* or a Genetic Algorithm between two clicked points, and streams the explored nodes plus the final path back as JSON. A vanilla-JS Leaflet frontend animates the search, then draws the route. The <code>branch_ali</code> branch adds the GA option alongside the original A*.
+    </div>
+
+    <nav class="toc" aria-label="Table of contents">
+      <strong>Contents</strong>
+      <ol>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#quickstart">Quick start</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#algorithms">Algorithms</a></li>
+        <li><a href="#api">HTTP API</a></li>
+        <li><a href="#ui">Frontend UI</a></li>
+        <li><a href="#config">Configuration</a></li>
+        <li><a href="#whats-new">What is new on branch_ali</a></li>
+        <li><a href="#files">Files at a glance</a></li>
+      </ol>
+    </nav>
+
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>RouteFinder is a small teaching project that contrasts two search strategies on the same real-world graph:</p>
+      <div class="grid-2">
+        <div class="card">
+          <h4>A* <span class="badge astar">deterministic</span></h4>
+          <p style="margin:0;color:var(--muted);font-size:0.9rem;">Best-first search with a Haversine heuristic. Guaranteed optimal, expands fewer nodes than Dijkstra.</p>
+        </div>
+        <div class="card">
+          <h4>Genetic Algorithm <span class="badge ga">stochastic</span></h4>
+          <p style="margin:0;color:var(--muted);font-size:0.9rem;">Population of biased random paths, evolved by tournament selection, crossover at shared nodes, and segment mutation.</p>
+        </div>
+      </div>
+      <p>The frontend picks the algorithm via a dropdown, then animates each explored node with a tooltip carrying its <code>f</code>, <code>g</code>, <code>h</code> scores (A*) or a GA marker.</p>
+    </section>
+
+    <section id="quickstart">
+      <h2>Quick start</h2>
+      <h3>Windows</h3>
+<pre><code>cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python app.py</code></pre>
+
+      <h3>macOS / Linux</h3>
+<pre><code>cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python app.py</code></pre>
+
+      <p>The first launch downloads the OSM graph for a 10 km radius around UGM (30 to 90 seconds) and pickles it to <code>graph_cache.pkl</code>. Subsequent launches load the cache in under 5 seconds.</p>
+      <p>Open the frontend in a separate process so the browser can hit the Flask API at <code>http://localhost:5000</code>:</p>
+<pre><code>cd frontend
+python -m http.server 8080
+# then visit http://localhost:8080</code></pre>
+      <p>Click once to place the green start marker, click again to place the red goal, watch the animation, press <em>Reset</em> to try again.</p>
+    </section>
+
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <p>Two processes, one shared graph in memory, JSON over HTTP between them.</p>
+      <div class="arch">
+        <div class="arch-flow" role="img" aria-label="Architecture: Browser, Flask backend, Graph">
+          <div class="arch-node">
+            <h5>Browser</h5>
+            <span class="sub">frontend/index.html</span>
+            <div class="arch-pill">Leaflet map</div>
+            <div class="arch-pill">map.js (click, animate)</div>
+          </div>
+          <div class="arch-node">
+            <h5>Flask backend</h5>
+            <span class="sub">app.py :5000</span>
+            <div class="arch-pill">/api/graph-info</div>
+            <div class="arch-pill">/api/route</div>
+            <div style="display:flex;gap:0.4rem;margin-top:0.3rem;">
+              <div class="arch-pill" style="flex:1;background:var(--surface);border-color:var(--border);">astar.py</div>
+              <div class="arch-pill" style="flex:1;background:var(--surface);border-color:var(--border);">ga.py</div>
+            </div>
+          </div>
+          <div class="arch-node">
+            <h5>Graph</h5>
+            <span class="sub">graph_loader.py</span>
+            <div class="arch-pill">osmnx (OSM)</div>
+            <div class="arch-pill">graph_cache.pkl</div>
+          </div>
+        </div>
+        <div class="arch-edges">
+          <span class="accent-edge">Browser &rarr; Backend: POST /api/route</span>
+          <span>Backend &rarr; Browser: path + explored</span>
+          <span>Backend &harr; Graph: networkx</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="algorithms">
+      <h2>Algorithms</h2>
+
+      <h3>A* <span class="badge astar">deterministic</span></h3>
+      <p>Each node gets a score:</p>
+      <div class="formula">f(n) = g(n) + h(n)</div>
+      <ul>
+        <li><strong style="color:var(--green)">g(n)</strong>: actual distance accumulated from the start node to <em>n</em>, summing edge lengths.</li>
+        <li><strong style="color:var(--accent)">h(n)</strong>: Haversine distance from <em>n</em> to the goal, a great-circle lower bound.</li>
+        <li><strong>f(n)</strong>: the priority used to order the open set.</li>
+      </ul>
+      <p>The heuristic never overestimates (no road is shorter than a straight line on the sphere), so it is admissible and A* returns the optimal path.</p>
+      <h4>Data structures</h4>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Component</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td>min-heap (<code>heapq</code>)</td><td>open set keyed by <code>f</code> with a tiebreaker counter</td></tr>
+          <tr><td><code>g_score</code> dict</td><td>best cost from start to each node seen so far</td></tr>
+          <tr><td><code>came_from</code> dict</td><td>parent pointer, used to reconstruct the path</td></tr>
+          <tr><td><code>closed</code> set</td><td>nodes already expanded</td></tr>
+          <tr><td><code>explored_order</code> list</td><td>frame-by-frame log streamed to the UI</td></tr>
+        </tbody>
+      </table></div>
+      <details>
+        <summary>Show core loop (<code>backend/astar.py</code>)</summary>
+<pre><code>while open_set:
+    current_f, _, current = heapq.heappop(open_set)
+    if current in closed:
+        continue
+    closed.add(current)
+    ...
+    if current == end_node:
+        return _reconstruct(graph, came_from, current, current_g, explored_order)
+
+    for neighbor, edge_dict in graph[current].items():
+        min_length = min(d.get("length", float("inf")) for d in edge_dict.values())
+        tentative_g = current_g + min_length
+        if tentative_g &lt; g_score.get(neighbor, float("inf")):
+            came_from[neighbor] = current
+            g_score[neighbor] = tentative_g
+            f = tentative_g + heuristic(neighbor)
+            heapq.heappush(open_set, (f, counter, neighbor))</code></pre>
+      </details>
+
+      <h3>Genetic Algorithm <span class="badge ga">stochastic</span></h3>
+      <p>The GA in <code>backend/ga.py</code> treats each candidate route as a chromosome and evolves a population of them.</p>
+      <ol>
+        <li><strong>Seeding.</strong> <code>generate_random_path</code> walks from start, at each step ranking neighbors by Haversine distance to the goal and picking one of the top three. This biases the population toward feasible directed paths instead of pure noise. The walk gives up if it dead-ends or exceeds 2000 nodes.</li>
+        <li><strong>Fitness.</strong> Sum of edge lengths along the path. Shorter is fitter.</li>
+        <li><strong>Selection.</strong> Tournament of 3, repeated for both parents.</li>
+        <li><strong>Crossover (p = 0.7).</strong> Pick a node that appears in both parents and splice prefix of parent 1 with suffix of parent 2. Fall back to parent 1 if they share nothing in their interiors.</li>
+        <li><strong>Mutation (p = 0.3).</strong> Cut at a random interior index, then call <code>generate_random_path</code> to redraw a segment to the goal.</li>
+        <li><strong>Elitism.</strong> Top two paths survive untouched into the next generation.</li>
+      </ol>
+      <p>Defaults: <code>pop_size=10</code>, <code>generations=20</code>. The best path across all generations is returned.</p>
+      <details>
+        <summary>Show evolution loop (<code>backend/ga.py</code>)</summary>
+<pre><code>for gen in range(generations):
+    pop_fitness = [(p, calculate_path_distance(graph, p)) for p in population]
+    pop_fitness.sort(key=lambda x: x[1])
+
+    if pop_fitness[0][1] &lt; best_dist:
+        best_path = pop_fitness[0][0]
+        best_dist = pop_fitness[0][1]
+
+    next_gen = [pop_fitness[0][0], pop_fitness[1][0]]  # elitism
+    while len(next_gen) &lt; pop_size:
+        parent1 = min(random.sample(pop_fitness, 3), key=lambda x: x[1])[0]
+        parent2 = min(random.sample(pop_fitness, 3), key=lambda x: x[1])[0]
+        child = crossover(parent1, parent2) if random.random() &lt; 0.7 else parent1
+        if random.random() &lt; 0.3:
+            child = mutate(graph, child, end_node, explored_order)
+        next_gen.append(child)
+    population = next_gen</code></pre>
+      </details>
+
+      <h3>Side by side</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Aspect</th><th>A*</th><th>Genetic Algorithm</th></tr></thead>
+        <tbody>
+          <tr><td>Output</td><td>Optimal shortest path</td><td>Approximate path, no guarantee</td></tr>
+          <tr><td>Determinism</td><td>Deterministic</td><td>Stochastic, different result per run</td></tr>
+          <tr><td>State</td><td>Open set + g_score + came_from</td><td>Population of full paths</td></tr>
+          <tr><td>Cost function</td><td>f = g + h</td><td>Sum of edge lengths along path</td></tr>
+          <tr><td>Knobs</td><td>None (heuristic is fixed)</td><td>pop_size, generations, crossover/mutation rates</td></tr>
+          <tr><td>Nodes reported</td><td>Real expansions, ordered</td><td>Every step taken by every seeding/mutation walk</td></tr>
+          <tr><td>Route color in UI</td><td>blue</td><td>purple (configured, currently overridden)</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="api">
+      <h2>HTTP API</h2>
+      <h3>GET <code>/api/graph-info</code></h3>
+      <p>Returns the map center, supported radius, and graph size. Used by the frontend to set the initial Leaflet view.</p>
+<pre><code>{
+  "center": [-7.7713, 110.3776],
+  "radius_m": 10000,
+  "node_count": 12345,
+  "edge_count": 34567
+}</code></pre>
+
+      <h3>POST <code>/api/route</code></h3>
+      <p>Body:</p>
+<pre><code>{
+  "start":     [lat, lon],
+  "end":       [lat, lon],
+  "algorithm": "astar"   // or "ga"
+}</code></pre>
+      <p>Coordinates are rejected with HTTP 400 if they fall outside a bounding box derived from <code>AREA_CENTER</code> and <code>AREA_RADIUS_M</code>. A graph with no connecting path yields HTTP 404.</p>
+      <p>Response:</p>
+<pre><code>{
+  "path": [[lat, lon], ...],
+  "distance_m": 1234.5,
+  "nodes_explored": 287,
+  "explored_coords": [
+    { "lat": ..., "lon": ..., "f": 812.3, "g": 410.1, "h": 402.2 },
+    ...
+  ]
+}</code></pre>
+      <details>
+        <summary>Note on the request field name</summary>
+        <p style="margin:0.5rem 0 0;">Earlier on this branch the backend read the choice from <code>body.get("ga", "astar")</code> while the frontend sent <code>algorithm</code>, so the GA path never fired. The backend has been updated to read <code>body.get("algorithm", "astar")</code> so both sides agree.</p>
+      </details>
+    </section>
+
+    <section id="ui">
+      <h2>Frontend UI</h2>
+      <p>One Leaflet map, one side panel, one legend. State machine in <code>map.js</code> walks through three phases:</p>
+      <ol>
+        <li><code>awaiting_start</code>, then <code>awaiting_end</code>, then <code>done</code>.</li>
+        <li>On the second click the panel posts to <code>/api/route</code> and switches the status text to <em>Mencari rute&hellip;</em>.</li>
+        <li><code>animateExploration</code> drops one orange circle per explored node, refreshes a yellow highlight on the current one, and updates the <code>f g h</code> score box (A* only).</li>
+        <li><code>drawResult</code> fades the exploration trail and overlays the final polyline.</li>
+      </ol>
+
+      <h3>Map legend</h3>
+      <div class="card">
+        <div class="legend-row"><span class="swatch" style="background:#4caf50;"></span> Start marker (green)</div>
+        <div class="legend-row"><span class="swatch" style="background:#e53935;"></span> Goal marker (red)</div>
+        <div class="legend-row"><span class="swatch" style="background:#f57c00;"></span> Explored node (closed set)</div>
+        <div class="legend-row"><span class="swatch" style="background:#ffeb3b;"></span> Currently expanding node</div>
+        <div class="legend-row"><span class="swatch line" style="background:#1a73e8;"></span> Optimal path (A*)</div>
+        <div class="legend-row"><span class="swatch line" style="background:#9c27b0;"></span> GA path (planned color)</div>
+      </div>
+
+      <h3>Animation speed</h3>
+      <p>The slider value <em>v</em> in [1, 10] maps to <code>baseDelay = clamp(200 / sqrt(2^(v-1)), 15, 400)</code> milliseconds per node. The lower bound stops a tight burst from saturating the main thread.</p>
+      <div class="table-wrap"><table class="speed-table">
+        <thead><tr><th>v</th><th>multiplier</th><th>delay / node</th><th>ETA for 300 nodes</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>1x</td><td>200 ms</td><td>60.0 s</td></tr>
+          <tr><td>2</td><td>2x</td><td>141 ms</td><td>42.4 s</td></tr>
+          <tr><td>3</td><td>4x</td><td>100 ms</td><td>30.0 s</td></tr>
+          <tr><td>4</td><td>8x</td><td>71 ms</td><td>21.2 s</td></tr>
+          <tr><td>5</td><td>16x</td><td>50 ms</td><td>15.0 s</td></tr>
+          <tr><td>6</td><td>32x</td><td>35 ms</td><td>10.6 s</td></tr>
+          <tr><td>7</td><td>64x</td><td>25 ms</td><td>7.5 s</td></tr>
+          <tr><td>8</td><td>128x</td><td>18 ms</td><td>5.3 s</td></tr>
+          <tr><td>9</td><td>256x</td><td>15 ms</td><td>4.5 s</td></tr>
+          <tr><td>10</td><td>512x</td><td>15 ms</td><td>4.5 s</td></tr>
+        </tbody>
+      </table></div>
+      <p style="color:var(--muted);font-size:0.88rem;margin-top:0.4rem;">v 9 and 10 hit the 15 ms floor.</p>
+    </section>
+
+    <section id="config">
+      <h2>Configuration</h2>
+      <p>All knobs live in <code>backend/config.py</code>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Constant</th><th>Default</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>AREA_CENTER</code></td><td><code>(-7.7713, 110.3776)</code></td><td>UGM coordinates, lat then lon. Drives both the map view and the bounding-box check.</td></tr>
+          <tr><td><code>AREA_RADIUS_M</code></td><td><code>10000</code></td><td>Radius in meters used by <code>osmnx.graph_from_point</code> and by the request validator.</td></tr>
+          <tr><td><code>NETWORK_TYPE</code></td><td><code>"walk"</code></td><td>Restricts the graph to pedestrian-permitted ways.</td></tr>
+          <tr><td><code>GRAPH_CACHE_PATH</code></td><td><code>"graph_cache.pkl"</code></td><td>Pickled networkx graph. Delete this file to force a fresh download.</td></tr>
+        </tbody>
+      </table></div>
+      <p>GA-specific defaults are arguments on <code>genetic_algorithm</code> in <code>backend/app.py</code> at the call site: <code>pop_size=10, generations=20</code>.</p>
+    </section>
+
+    <section id="whats-new">
+      <h2>What is new on <code>branch_ali</code></h2>
+      <p>Compared with <code>master</code>, this branch adds the Genetic Algorithm path and the UI wiring for it.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>File</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td><code>backend/ga.py</code></td><td>new, 151 lines, GA implementation</td></tr>
+          <tr><td><code>backend/app.py</code></td><td>imports <code>genetic_algorithm</code>, routes the request based on the algorithm field</td></tr>
+          <tr><td><code>frontend/index.html</code></td><td>algorithm selector and updated panel layout</td></tr>
+          <tr><td><code>frontend/map.js</code></td><td>reads the dropdown, sends the choice, hides the score box for GA, picks a purple polyline color</td></tr>
+          <tr><td><code>frontend/style.css</code></td><td>styles for the new dropdown and score-box hidden state</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Excerpt: route dispatch (<code>backend/app.py</code>)</h3>
+<pre><code><span class="diff-line">    body = request.get_json(silent=True) or {}</span><span class="diff-line">    start = body.get("start")</span><span class="diff-line">    end = body.get("end")</span><span class="diff-line diff-add">    algorithm = body.get("algorithm", "astar")</span><span class="diff-line">    ...</span><span class="diff-line">    try:</span><span class="diff-line diff-add">        if algorithm == "ga":</span><span class="diff-line diff-add">            result = genetic_algorithm(GRAPH, start_node, end_node, pop_size=10, generations=20)</span><span class="diff-line diff-add">        else:</span><span class="diff-line">            result = astar(GRAPH, start_node, end_node)</span><span class="diff-line">    except ValueError:</span><span class="diff-line">        return jsonify({"error": "No path found between the selected points."}), 404</span></code></pre>
+    </section>
+
+    <section id="files">
+      <h2>Files at a glance</h2>
+<pre><code>route-finder/
+├── backend/
+│   ├── app.py            Flask API, request validation, algorithm dispatch
+│   ├── astar.py          A* with Haversine heuristic
+│   ├── ga.py             Genetic Algorithm (new on branch_ali)
+│   ├── graph_loader.py   OSM download + pickle cache + nearest-node lookup
+│   ├── config.py         AREA_CENTER, AREA_RADIUS_M, NETWORK_TYPE, GRAPH_CACHE_PATH
+│   └── requirements.txt  flask, flask-cors, osmnx, networkx, numpy, scikit-learn
+├── frontend/
+│   ├── index.html        Map div, side panel, legend
+│   ├── map.js            Leaflet glue, animation, fetch
+│   └── style.css
+├── pyrefly.toml
+└── README.md</code></pre>
+      <details>
+        <summary>Sources for this writeup</summary>
+        <ul>
+          <li><code>README.md</code></li>
+          <li><code>backend/app.py</code>, <code>backend/astar.py</code>, <code>backend/ga.py</code>, <code>backend/graph_loader.py</code>, <code>backend/config.py</code></li>
+          <li><code>frontend/index.html</code>, <code>frontend/map.js</code></li>
+          <li><code>git diff master..branch_ali</code></li>
+        </ul>
+      </details>
+    </section>
+
+    <p class="sig">RouteFinder, branch <code>branch_ali</code>. Interactive readme rendered for Obsidian HTML Reader.</p>
+  </main>
+</body>
+</html>
