@@ -72,7 +72,7 @@ async function onMapClick(e) {
     nodesEl.textContent = "";
 
     // pilihan scorebox 
-    if (algorithm === "ga") {
+    if (algorithm === "hybrid_ga" || algorithm === "pure_ga") {
       scoreBox.classList.add("hidden");
     } else {
       scoreBox.classList.remove("hidden");
@@ -86,7 +86,11 @@ async function onMapClick(e) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Kirim pilihan algoritma ke server
-        body: JSON.stringify({ start: startCoords, end: endCoords, algorithm: algorithm }),
+        body: JSON.stringify({
+          start: [startCoords[0], startCoords[1]],
+          end: [endCoords[0], endCoords[1]],
+          algorithm: algorithm
+        }),
       });
 
       const data = await res.json();
@@ -256,7 +260,7 @@ resetBtn.addEventListener("click", () => {
   nodesEl.textContent = "";
 
   const algorithm = algoSelect.value;
-  if (algorithm === "ga") {
+  if (algorithm === "hybrid_ga" || algorithm === "pure_ga") {
     scoreBox.classList.add("hidden");
   } else {
     scoreBox.classList.remove("hidden");
@@ -270,7 +274,7 @@ resetBtn.addEventListener("click", () => {
 // Update score box otomatis ketika ganti dropdown (tanpa perlu klik reset)
 algoSelect.addEventListener("change", (e) => {
     if(state === "awaiting_start" || state === "awaiting_end"){
-        if (e.target.value === "ga") {
+        if (e.target.value === "hybrid_ga" || e.target.value === "pure_ga") {
             scoreBox.classList.add("hidden");
         } else {
             scoreBox.classList.remove("hidden");

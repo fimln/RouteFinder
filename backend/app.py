@@ -11,7 +11,8 @@ from config import AREA_CENTER, AREA_RADIUS_M
 from graph_loader import GRAPH, nearest_node
 # pyrefly: ignore [missing-import]
 from astar import astar
-from ga import genetic_algorithm
+# from ga import genetic_algorithm
+from gax2 import hybrid_ga, pure_ga
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def route():
     body = request.get_json(silent=True) or {}
     start = body.get("start")
     end = body.get("end")
-    algorithm = body.get("ga", "astar")
+    algorithm = body.get("algorithm", "astar")
 
     if not (isinstance(start, list) and len(start) == 2 and isinstance(end, list) and len(end) == 2):
         return jsonify({"error": "Coordinates outside supported area."}), 400
@@ -60,15 +61,22 @@ def route():
     start_node = nearest_node(GRAPH, start_lat, start_lon)
     end_node = nearest_node(GRAPH, end_lat, end_lon)
 
-    logger.info("Route request: start_node=%s end_node=%s", start_node, end_node)
+    logger.info("Route request: start_node=%s end_node=%s algorithm=%s", start_node, end_node, algorithm)
 
     try:
-        if algorithm == "ga":
-            result = genetic_algorithm(GRAPH, start_node, end_node, pop_size=10, generations=20)
+        if algorithm == "hybrid_ga":
+            result = hybrid_ga(GRAPH, start_node, end_node, pop_size=10, generations=20)
+        elif algorithm == "pure_ga":
+            result = pure_ga(GRAPH, start_node, end_node, pop_size=10, generations=20)
         else:
             result = astar(GRAPH, start_node, end_node)
+
     except ValueError:
         return jsonify({"error": "No path found between the selected points."}), 404
+
+    # GA mungkin selesai tanpa menemukan rute (mis. random walk mentok).
+    if not result.get("path_coords"):
+        return jsonify({"error": "Algoritma Genetic Gagal menemukan rute. Coba titik yang lebih dekat atau gunakan A*."}), 404
 
     return jsonify({
         "path": result["path_coords"],
