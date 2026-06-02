@@ -1,0 +1,490 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --coral:#D85A30;--coral-dk:#993C1D;--coral-lt:#FAECE7;
+  --blue:#185FA5;--blue-dk:#0C447C;--blue-lt:#E6F1FB;--blue-md:#B5D4F4;
+  --amber:#BA7517;--amber-lt:#FAEEDA;--amber-fill:#EF9F27;
+  --green:#3B6D11;--green-fill:#639922;--green-lt:#EAF3DE;
+  --teal:#0F6E56;--teal-lt:#E1F5EE;
+  --gray-lt:#F1EFE8;
+}
+.wrap{padding:0 0 28px;font-family:var(--font-sans)}
+.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media(max-width:800px){.main-layout{grid-template-columns:1fr}}
+.left-col{min-width:0}
+.right-col{min-width:0;display:flex;flex-direction:column;gap:12px}
+
+.step-card{
+  background:var(--color-background-primary);
+  border:0.5px solid var(--color-border-tertiary);
+  border-radius:var(--border-radius-lg);
+  padding:14px 18px;
+  margin-bottom:12px;
+  display:flex;gap:14px;align-items:flex-start;
+}
+.step-badge{
+  flex-shrink:0;
+  width:36px;height:36px;border-radius:50%;
+  background:var(--blue-lt);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:500;color:var(--blue);
+  border:0.5px solid var(--blue-md);
+}
+.step-badge.is-done{background:#EAF3DE;color:var(--green);border-color:#C0DD97}
+.step-text{flex:1;min-width:0}
+.step-title{font-size:15px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px;line-height:1.4}
+.step-desc{font-size:13px;color:var(--color-text-secondary);line-height:1.6}
+
+.controls{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.btn{
+  font-size:13px;font-weight:500;padding:8px 18px;
+  border-radius:var(--border-radius-md);
+  border:0.5px solid var(--color-border-secondary);
+  background:var(--color-background-primary);
+  color:var(--color-text-primary);
+  cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;gap:5px;letter-spacing:.01em;
+}
+.btn:hover{background:var(--color-background-secondary);border-color:var(--color-border-primary)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-play{
+  background:var(--blue);border-color:var(--blue-dk);color:#fff;
+}
+.btn-play:hover{background:var(--blue-dk);border-color:var(--blue-dk)}
+.btn-reset{color:var(--color-text-secondary)}
+.step-dots{display:flex;gap:6px;align-items:center;margin-left:auto}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--color-border-secondary);transition:all .25s;cursor:pointer}
+.dot.active{background:var(--blue);transform:scale(1.3)}
+.dot:hover{background:var(--blue-md)}
+
+svg text{font-family:var(--font-sans)}
+
+.legend{
+  display:flex;gap:12px;flex-wrap:wrap;
+  padding:10px 14px;
+  background:var(--color-background-secondary);
+  border-radius:var(--border-radius-md);
+  margin-top:10px;
+  border:0.5px solid var(--color-border-tertiary);
+}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-secondary)}
+.leg-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+
+.data-tables{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+@media(max-width:520px){.data-tables{grid-template-columns:1fr}}
+
+.tcard{
+  background:var(--color-background-primary);
+  border:0.5px solid var(--color-border-tertiary);
+  border-radius:var(--border-radius-lg);
+  overflow:hidden;
+}
+.tcard-head{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 14px;
+  background:var(--color-background-secondary);
+  border-bottom:0.5px solid var(--color-border-tertiary);
+}
+.tcard-icon{font-size:16px;color:var(--color-text-secondary)}
+.tcard-title{font-size:13px;font-weight:500;color:var(--color-text-primary);letter-spacing:.01em}
+
+.dtable{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.dtable th{
+  padding:8px 10px;text-align:left;
+  font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--color-text-secondary);
+  background:var(--color-background-secondary);
+  border-bottom:0.5px solid var(--color-border-tertiary);
+}
+.dtable th.r{text-align:right}
+.dtable td{padding:7px 10px;color:var(--color-text-primary);border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:middle}
+.dtable td.r{text-align:right}
+.dtable tr:last-child td{border-bottom:none}
+.dtable tr{transition:background .2s}
+
+.row-start td{background:color-mix(in srgb,#D85A30 7%,transparent)}
+.row-goal td{background:color-mix(in srgb,#3B6D11 9%,transparent)}
+.row-active td{background:color-mix(in srgb,#185FA5 9%,transparent)}
+.row-path td{background:color-mix(in srgb,#639922 7%,transparent)}
+
+.ndot{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:12px;font-weight:500;flex-shrink:0;border:1.5px solid rgba(0,0,0,.08);margin-right:4px;vertical-align:middle}
+.pill{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;letter-spacing:.02em}
+.pill-start{background:#FAECE7;color:#993C1D;border:0.5px solid #F0997B}
+.pill-goal{background:#E1F5EE;color:#0F6E56;border:0.5px solid #5DCAA5}
+.vg{color:#185FA5;font-weight:500}
+.vh{color:#BA7517;font-weight:500}
+.vf{color:var(--color-text-primary);font-weight:500}
+.vnil{color:var(--color-text-tertiary)}
+
+.tfoot-note{
+  font-size:11px;color:var(--color-text-secondary);
+  padding:8px 14px;
+  border-top:0.5px solid var(--color-border-tertiary);
+  background:var(--color-background-secondary);
+  line-height:1.6;
+  display:flex;gap:12px;flex-wrap:wrap;
+}
+.fn-item{display:flex;align-items:center;gap:4px}
+.fn-swatch{display:inline-block;width:8px;height:8px;border-radius:50%}
+</style>
+
+<div class="wrap">
+
+<div class="step-card" id="stepCard">
+  <div class="step-badge" id="stepBadge">0</div>
+  <div class="step-text">
+    <div class="step-title" id="stitle">Step 0, Inisialisasi dari A</div>
+    <div class="step-desc" id="sdesc">Open Set: [A]&nbsp;&nbsp;|&nbsp;&nbsp;Closed Set: [ ]&nbsp;&nbsp;|&nbsp;&nbsp;Tekan Next atau Play untuk mulai.</div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="prevStep()" id="btnPrev" disabled>
+    <i class="ti ti-arrow-left" aria-hidden="true"></i> Prev
+  </button>
+  <button class="btn" onclick="nextStep()" id="btnNext">
+    Next <i class="ti ti-arrow-right" aria-hidden="true"></i>
+  </button>
+  <button class="btn btn-play" onclick="togglePlay()" id="btnPlay">
+    <i class="ti ti-player-play" id="playIcon" aria-hidden="true"></i> Play
+  </button>
+  <button class="btn btn-reset" onclick="resetSim()">
+    <i class="ti ti-refresh" aria-hidden="true"></i> Reset
+  </button>
+  <div class="step-dots" id="dots"></div>
+</div>
+
+<div class="main-layout">
+
+<div class="left-col">
+  <svg id="svg" width="100%" viewBox="0 0 680 380" role="img">
+    <title>A* step-by-step graph simulation</title>
+    <desc>Graf node A hingga J dengan animasi traversal algoritma A*</desc>
+  </svg>
+
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#D85A30;border:1.5px solid #993C1D"></div><span>Start (A)</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:#185FA5;border:1.5px solid #0C447C"></div><span>Sedang diekspansi</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:#EF9F27;border:1.5px solid #BA7517"></div><span>Closed, sudah dieksplorasi</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:#B5D4F4;border:1.5px solid #378ADD"></div><span>Open, ditemukan</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:#639922;border:1.5px solid #3B6D11"></div><span>Jalur optimal / Goal</span></div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary)"></div><span>Belum dikunjungi</span></div>
+  </div>
+</div>
+
+<div class="right-col">
+
+  <div class="tcard">
+    <div class="tcard-head">
+      <i class="ti ti-calculator tcard-icon" aria-hidden="true"></i>
+      <span class="tcard-title">Nilai heuristik f(n) = g(n) + h(n)</span>
+    </div>
+    <table class="dtable">
+      <thead>
+        <tr>
+          <th>Node</th>
+          <th class="r">g(n)</th>
+          <th class="r">h(n)</th>
+          <th class="r">f(n)</th>
+          <th>Via</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-heur"></tbody>
+    </table>
+    <div class="tfoot-note">
+      <div class="fn-item"><span class="fn-swatch" style="background:#185FA5"></span><span><span class="vg">g(n)</span> = jarak aktual dari A</span></div>
+      <div class="fn-item"><span class="fn-swatch" style="background:#BA7517"></span><span><span class="vh">h(n)</span> = Haversine ke J</span></div>
+      <div class="fn-item"><span class="fn-swatch" style="background:var(--color-text-primary)"></span><span><span class="vf">f(n)</span> = estimasi total</span></div>
+    </div>
+  </div>
+
+  <div class="tcard">
+    <div class="tcard-head">
+      <i class="ti ti-map-pin tcard-icon" aria-hidden="true"></i>
+      <span class="tcard-title">Koordinat geografis</span>
+    </div>
+    <table class="dtable">
+      <thead>
+        <tr>
+          <th>Node</th>
+          <th class="r">Latitude</th>
+          <th class="r">Longitude</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-coord"></tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+</div>
+
+<script>
+const R = 22;
+
+const nodeData = {
+  A:{lat:7.47, lon:110.22, g:0,      h:138.66, via:null, isStart:true,  isGoal:false, isPath:true},
+  B:{lat:7.45, lon:110.34, g:13.42,  h:125.50, via:'A',  isStart:false, isGoal:false, isPath:true},
+  C:{lat:7.32, lon:110.38, g:24.28,  h:116.76, via:'A',  isStart:false, isGoal:false, isPath:false},
+  D:{lat:7.30, lon:111.42, g:133.67, h:28.99,  via:'A',  isStart:false, isGoal:false, isPath:false},
+  E:{lat:7.28, lon:110.67, g:54.42,  h:84.85,  via:'B',  isStart:false, isGoal:false, isPath:false},
+  F:{lat:7.23, lon:110.98, g:88.12,  h:50.93,  via:'B',  isStart:false, isGoal:false, isPath:true},
+  G:{lat:7.15, lon:110.72, g:66.99,  h:76.02,  via:'B',  isStart:false, isGoal:false, isPath:false},
+  H:{lat:6.91, lon:110.88, g:101.64, h:59.19,  via:'E',  isStart:false, isGoal:false, isPath:false},
+  I:{lat:7.14, lon:111.24, g:118.50, h:20.86,  via:'F',  isStart:false, isGoal:false, isPath:true},
+  J:{lat:7.04, lon:111.40, g:139.36, h:0.00,   via:'I',  isStart:false, isGoal:true,  isPath:true},
+};
+
+const nodes = {
+  A:{x:55,  y:160, label:'A', sub:'Start'},
+  B:{x:175, y:90,  label:'B', sub:''},
+  C:{x:175, y:160, label:'C', sub:''},
+  D:{x:175, y:235, label:'D', sub:''},
+  E:{x:320, y:65,  label:'E', sub:''},
+  F:{x:320, y:160, label:'F', sub:''},
+  G:{x:320, y:255, label:'G', sub:''},
+  H:{x:465, y:100, label:'H', sub:''},
+  I:{x:465, y:235, label:'I', sub:''},
+  J:{x:610, y:160, label:'J', sub:'Goal'},
+};
+
+const edges=[['A','B'],['A','C'],['A','D'],['B','E'],['B','F'],['B','G'],['C','E'],['C','F'],['C','G'],['D','E'],['D','F'],['D','G'],['E','H'],['E','I'],['F','H'],['F','I'],['G','H'],['G','I'],['H','J'],['I','J']];
+
+const steps=[
+  {title:'Step 0, Inisialisasi dari A', desc:'Open Set: [A]  |  Closed Set: [ ]', states:{A:'start'}, activeEdges:[], pathEdges:[], badge:'0', done:false, hl:['A']},
+  {title:'Step 1, Ekspansi A (f = 138.66)', desc:'A diekspansi. Tetangga B, C, D ditemukan dan masuk Open Set.', states:{A:'closed',B:'open',C:'open',D:'open'}, activeEdges:[['A','B'],['A','C'],['A','D']], pathEdges:[], badge:'1', done:false, hl:['A','B','C','D']},
+  {title:'Step 2, Ekspansi B (f = 138.92, terkecil)', desc:'B dipilih karena f terkecil. Tetangga baru: E (f=139.27), F (f=139.05), G (f=143.01).', states:{A:'closed',B:'active',C:'open',D:'open',E:'open',F:'open',G:'open'}, activeEdges:[['B','E'],['B','F'],['B','G']], pathEdges:[], badge:'2', done:false, hl:['B','E','F','G']},
+  {title:'Step 3, Ekspansi F (f = 139.05, terkecil)', desc:'F dipilih. Tetangga baru: H (f=184.56), I (f=139.36). Closed: [A, B, F].', states:{A:'closed',B:'closed',C:'open',D:'open',E:'open',F:'active',G:'open',H:'open',I:'open'}, activeEdges:[['F','H'],['F','I']], pathEdges:[], badge:'3', done:false, hl:['F','H','I']},
+  {title:'Step 4, Ekspansi E (f = 139.27)', desc:'Node Relaxation: H diperbarui via E (f=160.83 < 184.56). Closed: [A, B, F, E].', states:{A:'closed',B:'closed',C:'open',D:'open',E:'active',F:'closed',G:'open',H:'open',I:'open'}, activeEdges:[['E','H'],['E','I']], pathEdges:[], badge:'4', done:false, hl:['E','H']},
+  {title:'Step 5, Ekspansi I (f = 139.36), J ditemukan!', desc:'I diekspansi dan menemukan J (Goal). f(J) = 139.36, h = 0.', states:{A:'closed',B:'closed',C:'open',D:'open',E:'closed',F:'closed',G:'open',H:'open',I:'active',J:'goal'}, activeEdges:[['I','J']], pathEdges:[], badge:'5', done:false, hl:['I','J']},
+  {title:'Jalur optimal: A → B → F → I → J', desc:'Total 139.36 km  |  C, D, G, H tidak perlu dieksplorasi, A* hemat 4 node!', states:{A:'path',B:'path',C:'skip',D:'skip',E:'closed',F:'path',G:'skip',H:'skip',I:'path',J:'goal'}, activeEdges:[], pathEdges:[['A','B'],['B','F'],['F','I'],['I','J']], badge:'✓', done:true, hl:['A','B','F','I','J']},
+];
+
+const NC={
+  start: {fill:'#D85A30',stroke:'#993C1D',text:'#fff'},
+  active:{fill:'#185FA5',stroke:'#0C447C',text:'#fff'},
+  closed:{fill:'#EF9F27',stroke:'#BA7517',text:'#633806'},
+  open:  {fill:'#B5D4F4',stroke:'#378ADD',text:'#0C447C'},
+  path:  {fill:'#639922',stroke:'#3B6D11',text:'#fff'},
+  goal:  {fill:'#1D9E75',stroke:'#0F6E56',text:'#fff'},
+  skip:  {fill:'var(--color-background-tertiary)',stroke:'var(--color-border-tertiary)',text:'var(--color-text-tertiary)'},
+  none:  {fill:'var(--color-background-secondary)',stroke:'var(--color-border-secondary)',text:'var(--color-text-secondary)'},
+};
+
+const DC={start:'#D85A30',active:'#185FA5',closed:'#EF9F27',open:'#B5D4F4',path:'#639922',goal:'#1D9E75',skip:'var(--color-border-tertiary)',none:'var(--color-border-secondary)'};
+
+let current=0,playing=false,playTimer=null;
+
+function ek(a,b){return a+'_'+b}
+
+function render(){
+  const step=steps[current];
+  const svg=document.getElementById('svg');
+
+  svg.innerHTML=`<title>A* graph simulation</title><desc>Step-by-step traversal A*</desc>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M2 1.5L8 5L2 8.5" fill="none" stroke="var(--color-border-secondary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M2 1.5L8 5L2 8.5" fill="none" stroke="#185FA5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrP" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M2 1.5L8 5L2 8.5" fill="none" stroke="#639922" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>`;
+
+  const aSet=new Set(step.activeEdges.map(([a,b])=>ek(a,b)));
+  const pSet=new Set(step.pathEdges.map(([a,b])=>ek(a,b)));
+
+  for(const [a,b] of edges){
+    const na=nodes[a],nb=nodes[b];
+    const dx=nb.x-na.x,dy=nb.y-na.y,d=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/d,uy=dy/d;
+    const k=ek(a,b);
+    const isA=aSet.has(k),isP=pSet.has(k);
+    const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1',na.x+ux*R); ln.setAttribute('y1',na.y+uy*R);
+    ln.setAttribute('x2',nb.x-ux*(R+3)); ln.setAttribute('y2',nb.y-uy*(R+3));
+    if(isP){ln.setAttribute('stroke','#639922');ln.setAttribute('stroke-width','2.5');ln.setAttribute('marker-end','url(#arrP)');}
+    else if(isA){ln.setAttribute('stroke','#185FA5');ln.setAttribute('stroke-width','1.5');ln.setAttribute('stroke-dasharray','6 3');ln.setAttribute('marker-end','url(#arrA)');}
+    else{ln.setAttribute('stroke','var(--color-border-tertiary)');ln.setAttribute('stroke-width','0.5');ln.setAttribute('stroke-dasharray','3 4');ln.setAttribute('marker-end','url(#arr)');}
+    svg.appendChild(ln);
+  }
+
+  for(const [id,n] of Object.entries(nodes)){
+    const st=step.states[id];
+    const c=NC[st]||NC.none;
+    const isA=(st==='active'||st==='path'||st==='goal');
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+
+    if(isA){
+      const ring=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      ring.setAttribute('cx',n.x);ring.setAttribute('cy',n.y);ring.setAttribute('r',R+5);
+      ring.setAttribute('fill','none');ring.setAttribute('stroke',c.stroke);ring.setAttribute('stroke-width','0.5');ring.setAttribute('opacity','0.4');
+      g.appendChild(ring);
+    }
+
+    const ci=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ci.setAttribute('cx',n.x);ci.setAttribute('cy',n.y);ci.setAttribute('r',R);
+    ci.setAttribute('fill',c.fill);ci.setAttribute('stroke',c.stroke);
+    ci.setAttribute('stroke-width',isA?'2':'0.5');
+    g.appendChild(ci);
+
+    const lb=document.createElementNS('http://www.w3.org/2000/svg','text');
+    lb.setAttribute('x',n.x);lb.setAttribute('y',n.y);
+    lb.setAttribute('text-anchor','middle');lb.setAttribute('dominant-baseline','central');
+    lb.setAttribute('font-size','15');lb.setAttribute('font-weight','500');lb.setAttribute('fill',c.text);
+    lb.textContent=n.label;
+    g.appendChild(lb);
+
+    if(n.sub&&st&&st!=='skip'){
+      const sb=document.createElementNS('http://www.w3.org/2000/svg','text');
+      sb.setAttribute('x',n.x);sb.setAttribute('y',n.y+R+11);
+      sb.setAttribute('text-anchor','middle');sb.setAttribute('font-size','11');sb.setAttribute('fill','var(--color-text-secondary)');
+      sb.textContent=n.sub;
+      g.appendChild(sb);
+    }
+
+    const nd=nodeData[id];
+    if(st&&st!=='none'&&st!=='skip'&&nd.g!=null){
+      const fy=n.y+R+24;
+      const gTxt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      gTxt.setAttribute('x',n.x-28);gTxt.setAttribute('y',fy);
+      gTxt.setAttribute('text-anchor','end');gTxt.setAttribute('font-size','10');gTxt.setAttribute('font-weight','500');gTxt.setAttribute('fill','#185FA5');
+      gTxt.textContent=nd.g.toFixed(1);
+      g.appendChild(gTxt);
+
+      const plusTxt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      plusTxt.setAttribute('x',n.x-22);plusTxt.setAttribute('y',fy);
+      plusTxt.setAttribute('text-anchor','middle');plusTxt.setAttribute('font-size','10');plusTxt.setAttribute('fill','var(--color-text-tertiary)');
+      plusTxt.textContent='+';
+      g.appendChild(plusTxt);
+
+      const hTxt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      hTxt.setAttribute('x',n.x-2);hTxt.setAttribute('y',fy);
+      hTxt.setAttribute('text-anchor','end');hTxt.setAttribute('font-size','10');hTxt.setAttribute('font-weight','500');hTxt.setAttribute('fill','#BA7517');
+      hTxt.textContent=nd.h.toFixed(1);
+      g.appendChild(hTxt);
+
+      const eqTxt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      eqTxt.setAttribute('x',n.x+4);eqTxt.setAttribute('y',fy);
+      eqTxt.setAttribute('text-anchor','middle');eqTxt.setAttribute('font-size','10');eqTxt.setAttribute('fill','var(--color-text-tertiary)');
+      eqTxt.textContent='=';
+      g.appendChild(eqTxt);
+
+      const fVal=(nd.g+nd.h).toFixed(1);
+      const fTxt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      fTxt.setAttribute('x',n.x+10);fTxt.setAttribute('y',fy);
+      fTxt.setAttribute('text-anchor','start');fTxt.setAttribute('font-size','10');fTxt.setAttribute('font-weight','600');fTxt.setAttribute('fill','var(--color-text-primary)');
+      fTxt.textContent=fVal;
+      g.appendChild(fTxt);
+    }
+    svg.appendChild(g);
+  }
+
+  document.getElementById('stitle').textContent=step.title;
+  document.getElementById('sdesc').textContent=step.desc;
+  const badge=document.getElementById('stepBadge');
+  badge.textContent=step.badge;
+  badge.className='step-badge'+(step.done?' is-done':'');
+  document.getElementById('btnPrev').disabled=current===0;
+  document.getElementById('btnNext').disabled=current===steps.length-1;
+  renderDots();
+  renderTables();
+}
+
+function renderDots(){
+  const w=document.getElementById('dots');
+  w.innerHTML='';
+  steps.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='dot'+(i===current?' active':'');
+    d.onclick=()=>{current=i;render();};
+    d.setAttribute('title',`Step ${i}`);
+    w.appendChild(d);
+  });
+}
+
+const nodeOrder=['A','B','C','D','E','F','G','H','I','J'];
+
+function getDotColor(id){
+  const st=steps[current].states[id];
+  return DC[st]||DC.none;
+}
+
+function getRowClass(id){
+  const d=nodeData[id];
+  const st=steps[current].states[id];
+  const hl=new Set(steps[current].hl||[]);
+  if(d.isStart) return 'row-start';
+  if(d.isGoal)  return 'row-goal';
+  if(st==='active') return 'row-active';
+  if(d.isPath&&current===steps.length-1) return 'row-path';
+  if(hl.has(id)) return 'row-active';
+  return '';
+}
+
+function renderTables(){
+  const tc=document.getElementById('tbl-coord');
+  tc.innerHTML='';
+  for(const id of nodeOrder){
+    const d=nodeData[id];
+    const dc=getDotColor(id);
+    const rc=getRowClass(id);
+    let pill='';
+    if(d.isStart) pill='<span class="pill pill-start">Start</span>';
+    if(d.isGoal)  pill='<span class="pill pill-goal">Goal</span>';
+    tc.innerHTML+=`<tr class="${rc}">
+      <td><span class="ndot" style="background:${dc};color:#fff;border-color:transparent">${id}</span></td>
+      <td class="r">${d.lat.toFixed(2)}°</td>
+      <td class="r">${d.lon.toFixed(2)}°</td>
+      <td>${pill}</td>
+    </tr>`;
+  }
+
+  const th=document.getElementById('tbl-heur');
+  th.innerHTML='';
+  for(const id of nodeOrder){
+    const d=nodeData[id];
+    const dc=getDotColor(id);
+    const rc=getRowClass(id);
+    const gv=d.g!=null?`<span class="vg">${d.g.toFixed(2)}</span>`:`<span class="vnil">—</span>`;
+    const fv=d.g!=null?`<span class="vf">${(d.g+d.h).toFixed(2)}</span>`:`<span class="vnil">—</span>`;
+    const viaTxt=d.via?`<span class="ndot" style="background:${DC[steps[current].states[d.via]]||DC.none};color:#fff;border-color:transparent;font-size:10px;width:18px;height:18px">${d.via}</span>`:`<span class="vnil">—</span>`;
+    th.innerHTML+=`<tr class="${rc}">
+      <td><span class="ndot" style="background:${dc};color:#fff;border-color:transparent">${id}</span></td>
+      <td class="r">${gv}</td>
+      <td class="r"><span class="vh">${d.h.toFixed(2)}</span></td>
+      <td class="r">${fv}</td>
+      <td>${viaTxt}</td>
+    </tr>`;
+  }
+}
+
+function nextStep(){if(current<steps.length-1){current++;render();}}
+function prevStep(){if(current>0){current--;render();}}
+function resetSim(){stopPlay();current=0;render();}
+
+function togglePlay(){
+  if(playing)stopPlay();else startPlay();
+}
+function startPlay(){
+  playing=true;
+  const btn=document.getElementById('btnPlay');
+  const ic=document.getElementById('playIcon');
+  btn.innerHTML='<i class="ti ti-player-pause" aria-hidden="true"></i> Pause';
+  playTimer=setInterval(()=>{
+    if(current>=steps.length-1){stopPlay();return;}
+    current++;render();
+  },1900);
+}
+function stopPlay(){
+  playing=false;
+  document.getElementById('btnPlay').innerHTML='<i class="ti ti-player-play" aria-hidden="true"></i> Play';
+  clearInterval(playTimer);
+}
+
+render();
+</script>

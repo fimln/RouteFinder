@@ -368,17 +368,33 @@ python -m http.server 8080
       <h3>Genetic Algorithm <span class="badge ga">stochastic</span></h3>
       <p>The GA in <code>backend/ga.py</code> treats each candidate route as a chromosome and evolves a population of them.</p>
       <ol>
-        <li><strong>Seeding.</strong> <code>generate_random_path</code> walks from start, at each step ranking neighbors by Haversine distance to the goal and picking one of the top three. This biases the population toward feasible directed paths instead of pure noise. The walk gives up if it dead-ends or exceeds 2000 nodes.</li>
+        <li><strong>Seeding.</strong> The first population member is guaranteed via <code>nx.shortest_path</code> (length-weighted). Remaining slots are filled by <code>generate_random_path</code>, which walks from start, at each step ranking neighbors by Haversine distance to the goal and picking one of the top three. This biases the population toward feasible directed paths instead of pure noise. The walk gives up if it dead-ends or exceeds 2000 nodes.</li>
         <li><strong>Fitness.</strong> Sum of edge lengths along the path. Shorter is fitter.</li>
         <li><strong>Selection.</strong> Tournament of 3, repeated for both parents.</li>
-        <li><strong>Crossover (p = 0.7).</strong> Pick a node that appears in both parents and splice prefix of parent 1 with suffix of parent 2. Fall back to parent 1 if they share nothing in their interiors.</li>
+        <li><strong>Crossover (p = 0.7).</strong> Pick a node that appears in both parents and splice prefix of parent 1 with suffix of parent 2. If the resulting path would contain a cycle (duplicate nodes), fall back to parent 1.</li>
         <li><strong>Mutation (p = 0.3).</strong> Cut at a random interior index, then call <code>generate_random_path</code> to redraw a segment to the goal.</li>
         <li><strong>Elitism.</strong> Top two paths survive untouched into the next generation.</li>
       </ol>
       <p>Defaults: <code>pop_size=10</code>, <code>generations=20</code>. The best path across all generations is returned.</p>
       <details>
-        <summary>Show evolution loop (<code>backend/ga.py</code>)</summary>
-<pre><code>for gen in range(generations):
+        <summary>Show seeding + evolution loop (<code>backend/ga.py</code>)</summary>
+<pre><code># 1. Inisialisasi Populasi (shortest path sebagai jaminan)
+try:
+    shortest = nx.shortest_path(graph, start_node, end_node, weight="length")
+    population.append(shortest)
+except nx.NetworkXNoPath:
+    raise ValueError("GA gagal menemukan rute awal yang valid.")
+
+# Tambahkan rute acak berbias untuk mengisi populasi
+for _ in range(pop_size * 3):
+    if len(population) &gt;= pop_size:
+        break
+    p = generate_random_path(graph, start_node, end_node, explored_order)
+    if p and p not in population:
+        population.append(p)
+
+# 2. Siklus Evolusi
+for gen in range(generations):
     pop_fitness = [(p, calculate_path_distance(graph, p)) for p in population]
     pop_fitness.sort(key=lambda x: x[1])
 
@@ -386,10 +402,11 @@ python -m http.server 8080
         best_path = pop_fitness[0][0]
         best_dist = pop_fitness[0][1]
 
-    next_gen = [pop_fitness[0][0], pop_fitness[1][0]]  # elitism
+    elite_count = min(2, len(pop_fitness))
+    next_gen = [pop_fitness[i][0] for i in range(elite_count)]
     while len(next_gen) &lt; pop_size:
-        parent1 = min(random.sample(pop_fitness, 3), key=lambda x: x[1])[0]
-        parent2 = min(random.sample(pop_fitness, 3), key=lambda x: x[1])[0]
+        parent1 = min(random.sample(pop_fitness, min(3, len(pop_fitness))), key=lambda x: x[1])[0]
+        parent2 = min(random.sample(pop_fitness, min(3, len(pop_fitness))), key=lambda x: x[1])[0]
         child = crossover(parent1, parent2) if random.random() &lt; 0.7 else parent1
         if random.random() &lt; 0.3:
             child = mutate(graph, child, end_node, explored_order)
@@ -505,10 +522,14 @@ python -m http.server 8080
     <section id="whats-new">
       <h2>What is new on <code>branch_ali</code></h2>
       <p>Compared with <code>master</code>, this branch adds the Genetic Algorithm path and the UI wiring for it.</p>
+      <details>
+        <summary>Bug fix: GA now always seeds a valid population</summary>
+        <p style="margin:0.5rem 0 0;">Previously, <code>generate_random_path</code> could fail on every attempt in graphs with many dead ends (typical for walking networks), producing an empty population and raising <code>ValueError("No path found between the selected points.")</code>. The fix seeds the first population member with <code>nx.shortest_path(graph, start, end, weight="length")</code>, guaranteeing at least one valid path. The crossover function was also hardened against producing cyclic paths.</p>
+      </details>
       <div class="table-wrap"><table>
         <thead><tr><th>File</th><th>Change</th></tr></thead>
         <tbody>
-          <tr><td><code>backend/ga.py</code></td><td>new, 151 lines, GA implementation</td></tr>
+          <tr><td><code>backend/ga.py</code></td><td>new, 162 lines, GA implementation with guaranteed population seeding</td></tr>
           <tr><td><code>backend/app.py</code></td><td>imports <code>genetic_algorithm</code>, routes the request based on the algorithm field</td></tr>
           <tr><td><code>frontend/index.html</code></td><td>algorithm selector and updated panel layout</td></tr>
           <tr><td><code>frontend/map.js</code></td><td>reads the dropdown, sends the choice, hides the score box for GA, picks a purple polyline color</td></tr>
